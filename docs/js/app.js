@@ -8,6 +8,9 @@
             }), 0);
         }));
     }
+    function getHash() {
+        if (location.hash) return location.hash.replace("#", "");
+    }
     let bodyLockStatus = true;
     let bodyLockToggle = (delay = 500) => {
         if (document.documentElement.classList.contains("lock")) bodyUnlock(delay); else bodyLock(delay);
@@ -57,6 +60,15 @@
             }
         }));
     }
+    function menuClose() {
+        bodyUnlock();
+        document.documentElement.classList.remove("menu-open");
+    }
+    function functions_FLS(message) {
+        setTimeout((() => {
+            if (window.FLS) console.log(message);
+        }), 0);
+    }
     function getDigFormat(item, sepp = " ") {
         return item.toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, `$1${sepp}`);
     }
@@ -65,6 +77,44 @@
             return self.indexOf(item) === index;
         }));
     }
+    let gotoblock_gotoBlock = (targetBlock, noHeader = false, speed = 500, offsetTop = 0) => {
+        const targetBlockElement = document.querySelector(targetBlock);
+        if (targetBlockElement) {
+            let headerItem = "";
+            let headerItemHeight = 0;
+            if (noHeader) {
+                headerItem = "header.header";
+                const headerElement = document.querySelector(headerItem);
+                if (!headerElement.classList.contains("_header-scroll")) {
+                    headerElement.style.cssText = `transition-duration: 0s;`;
+                    headerElement.classList.add("_header-scroll");
+                    headerItemHeight = headerElement.offsetHeight;
+                    headerElement.classList.remove("_header-scroll");
+                    setTimeout((() => {
+                        headerElement.style.cssText = ``;
+                    }), 0);
+                } else headerItemHeight = headerElement.offsetHeight;
+            }
+            let options = {
+                speedAsDuration: true,
+                speed,
+                header: headerItem,
+                offset: offsetTop,
+                easing: "easeOutQuad"
+            };
+            document.documentElement.classList.contains("menu-open") ? menuClose() : null;
+            if (typeof SmoothScroll !== "undefined") (new SmoothScroll).animateScroll(targetBlockElement, "", options); else {
+                let targetBlockElementPosition = targetBlockElement.getBoundingClientRect().top + scrollY;
+                targetBlockElementPosition = headerItemHeight ? targetBlockElementPosition - headerItemHeight : targetBlockElementPosition;
+                targetBlockElementPosition = offsetTop ? targetBlockElementPosition - offsetTop : targetBlockElementPosition;
+                window.scrollTo({
+                    top: targetBlockElementPosition,
+                    behavior: "smooth"
+                });
+            }
+            functions_FLS(`[gotoBlock]: Юхуу...їдемо до ${targetBlock}`);
+        } else functions_FLS(`[gotoBlock]: Йой... Такого блоку немає на сторінці: ${targetBlock}`);
+    };
     class ScrollWatcher {
         constructor(props) {
             let defaultConfig = {
@@ -155,6 +205,51 @@
     }
     modules_flsModules.watcher = new ScrollWatcher({});
     let addWindowScrollEvent = false;
+    function pageNavigation() {
+        document.addEventListener("click", pageNavigationAction);
+        document.addEventListener("watcherCallback", pageNavigationAction);
+        function pageNavigationAction(e) {
+            if (e.type === "click") {
+                const targetElement = e.target;
+                if (targetElement.closest("[data-goto]")) {
+                    const gotoLink = targetElement.closest("[data-goto]");
+                    const gotoLinkSelector = gotoLink.dataset.goto ? gotoLink.dataset.goto : "";
+                    const noHeader = gotoLink.hasAttribute("data-goto-header") ? true : false;
+                    const gotoSpeed = gotoLink.dataset.gotoSpeed ? gotoLink.dataset.gotoSpeed : 500;
+                    const offsetTop = gotoLink.dataset.gotoTop ? parseInt(gotoLink.dataset.gotoTop) : 0;
+                    if (modules_flsModules.fullpage) {
+                        const fullpageSection = document.querySelector(`${gotoLinkSelector}`).closest("[data-fp-section]");
+                        const fullpageSectionId = fullpageSection ? +fullpageSection.dataset.fpId : null;
+                        if (fullpageSectionId !== null) {
+                            modules_flsModules.fullpage.switchingSection(fullpageSectionId);
+                            document.documentElement.classList.contains("menu-open") ? menuClose() : null;
+                        }
+                    } else gotoblock_gotoBlock(gotoLinkSelector, noHeader, gotoSpeed, offsetTop);
+                    e.preventDefault();
+                }
+            } else if (e.type === "watcherCallback" && e.detail) {
+                const entry = e.detail.entry;
+                const targetElement = entry.target;
+                if (targetElement.dataset.watch === "navigator") {
+                    document.querySelector(`[data-goto]._navigator-active`);
+                    let navigatorCurrentItem;
+                    if (targetElement.id && document.querySelector(`[data-goto="#${targetElement.id}"]`)) navigatorCurrentItem = document.querySelector(`[data-goto="#${targetElement.id}"]`); else if (targetElement.classList.length) for (let index = 0; index < targetElement.classList.length; index++) {
+                        const element = targetElement.classList[index];
+                        if (document.querySelector(`[data-goto=".${element}"]`)) {
+                            navigatorCurrentItem = document.querySelector(`[data-goto=".${element}"]`);
+                            break;
+                        }
+                    }
+                    if (entry.isIntersecting) navigatorCurrentItem ? navigatorCurrentItem.classList.add("_navigator-active") : null; else navigatorCurrentItem ? navigatorCurrentItem.classList.remove("_navigator-active") : null;
+                }
+            }
+        }
+        if (getHash()) {
+            let goToHash;
+            if (document.querySelector(`#${getHash()}`)) goToHash = `#${getHash()}`; else if (document.querySelector(`.${getHash()}`)) goToHash = `.${getHash()}`;
+            goToHash ? gotoblock_gotoBlock(goToHash, true, 500, 20) : null;
+        }
+    }
     function digitsCounter() {
         function digitsCountersInit(digitsCountersItems) {
             let digitsCounters = digitsCountersItems ? digitsCountersItems : document.querySelectorAll("[data-digits-counter]");
@@ -4535,9 +4630,8 @@
     }
     const lenis = new Lenis({
         smooth: true,
-        smoothTouch: true,
         lerp: .05,
-        mouseMultiplier: 3
+        mouseMultiplier: 2
     });
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add((time => {
@@ -4545,6 +4639,48 @@
     }));
     gsap.ticker.lagSmoothing(0);
     window.addEventListener("DOMContentLoaded", (() => {
+        const canvas = document.getElementById("canvasModel");
+        if (canvas) {
+            const speed = 40;
+            const ctx = canvas.getContext("2d");
+            let marioTimer = null;
+            const mario = {
+                img: null,
+                x: 0,
+                y: 0,
+                width: 593,
+                height: 850,
+                currentframe: 0,
+                totalframes: 65
+            };
+            mario.img = new Image;
+            mario.img.src = "img/model/left-min.png";
+            function animateMario() {
+                mario.currentframe++;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(mario.img, mario.currentframe * mario.width, 0, mario.width, mario.height, 0, 0, mario.width, mario.height);
+                if (mario.currentframe >= mario.totalframes) {
+                    clearInterval(marioTimer);
+                    canvas.style.display = "none";
+                    document.getElementById("lastModel").style.display = "block";
+                }
+            }
+            mario.img.onload = function() {
+                const observer = new IntersectionObserver((entries => {
+                    entries.forEach((entry => {
+                        if (entry.isIntersecting && entry.intersectionRatio >= .3) {
+                            animateMario();
+                            marioTimer = setInterval(animateMario, speed);
+                            document.getElementById("firstModel").style.display = "none";
+                            observer.unobserve(entry.target);
+                        }
+                    }));
+                }), {
+                    threshold: [ .3 ]
+                });
+                observer.observe(canvas);
+            };
+        }
         let isAnimating = false;
         let portfolioSlider;
         if (document.querySelector(".portfolio__slider")) {
@@ -4628,11 +4764,13 @@
                     modalContent.appendChild(videoElement);
                     modal.classList.add("_active");
                     document.documentElement.classList.add("lock");
+                    document.documentElement.classList.add("video-modal");
                 }));
             }));
             modalCloseButton.addEventListener("click", (() => {
                 modal.classList.remove("_active");
                 document.documentElement.classList.remove("lock");
+                document.documentElement.classList.remove("video-modal");
                 const video = modalContent.querySelector("video");
                 setTimeout((() => {
                     if (video) {
@@ -4641,6 +4779,38 @@
                     }
                     modalContent.innerHTML = "";
                 }), 500);
+            }));
+        }
+        const videoHead = document.querySelector(".head-deck__3d");
+        if (videoHead) {
+            const observerOptions = {
+                root: null,
+                threshold: [ .8, 1 ]
+            };
+            const observer = new IntersectionObserver((entries => {
+                entries.forEach((entry => {
+                    if (entry.intersectionRatio >= .5) {
+                        if (videoHead.paused) {
+                            videoHead.currentTime = 0;
+                            videoHead.play();
+                        }
+                    } else if (entry.intersectionRatio === 0) {
+                        videoHead.pause();
+                        videoHead.currentTime = 0;
+                    }
+                }));
+            }), observerOptions);
+            observer.observe(videoHead);
+            let isEnded = false;
+            videoHead.addEventListener("ended", (() => {
+                isEnded = true;
+            }));
+            videoHead.addEventListener("mouseover", (() => {
+                if (isEnded) {
+                    videoHead.currentTime = 0;
+                    videoHead.play();
+                    isEnded = false;
+                }
             }));
         }
         function updateHeroHeight() {
@@ -4706,6 +4876,9 @@
         window.addEventListener("resize", (() => {
             const currentWidth = window.innerWidth;
             if (currentWidth !== lastWidth) {
+                setTimeout((() => {
+                    location.reload();
+                }), 300);
                 updateHeroHeight();
                 initSplitType();
                 createAnimation();
@@ -4737,14 +4910,38 @@
         const advisers = document.querySelector(".advisers");
         const advisersBlock = document.querySelector(".advisers__block");
         const advisersListItems = document.querySelectorAll(".list-advisers__item");
-        document.querySelector(".hrz-sections");
-        document.querySelector(".hrz-sections__wrapper");
+        document.querySelector(".portf-deck");
+        document.querySelector(".portf-deck__body");
         const portfolioSection = document.querySelector(".portfolio");
         const portfolioContainer = document.querySelector(".portfolio__container");
+        document.querySelector(".portfolio__body");
         const deckSection = document.querySelector(".deck");
+        const deckContainer = document.querySelector(".deck__container");
         const deckTop = document.querySelector(".deck__top");
+        const deckBtm = document.querySelector(".deck__btm");
+        const deckListItemSmm = document.querySelector(".list-deck__item.item-smm");
+        document.querySelector(".list-deck__item.item-3d");
+        document.querySelector(".men-deck__item");
+        document.querySelector(".men-deck__model");
+        const merchSection = document.querySelector(".merch");
+        const merchContainer = document.querySelector(".merch__container");
+        const footer = document.querySelector(".footer");
+        const footerBody = document.querySelector(".footer__body");
+        const payment = document.querySelector(".payment");
+        const paymentContainer = document.querySelector(".payment__container");
+        const paymentItems = document.querySelectorAll(".payment__item");
+        const paymentLine = document.querySelectorAll(".payment__line");
+        const contacts = document.querySelector(".contacts");
+        const contactsContainer = document.querySelector(".contacts__container");
+        const getContactsImg = document.querySelector(".get-contacts__img");
+        const getContactsCubs = document.querySelector(".get-contacts__cubes");
+        const getContactsTxts = document.querySelector(".get-contacts__txts");
+        const footerList = document.querySelector(".footer-list");
         function createAnimation() {
             ScrollTrigger.getAll().forEach((trigger => trigger.kill()));
+            ScrollTrigger.defaults({
+                smoothTouch: true
+            });
             if (heroTitle) {
                 const heroTitleAline = document.querySelectorAll(".title-hero .split-chars");
                 const heroTitleA = document.querySelectorAll(".title-hero__a .char");
@@ -4915,25 +5112,21 @@
                     scrollTrigger: {
                         trigger: partnersSection,
                         start: "top 15%",
-                        end: "bottom 60%",
+                        end: "bottom 50%",
                         scrub: true
                     }
                 }).to(advisersTitleSpan, {
                     stagger: index => index * .06,
                     y: "0%"
                 }).to(advisersTitleSpan, {
-                    stagger: index => index * .06,
-                    y: "-100%",
-                    opacity: 0
-                }, "+=.8").to(advisersSubTitleSpan, {
+                    stagger: index => index * .06
+                }, "+=2").to(advisersSubTitleSpan, {
                     y: "0%",
                     opacity: 1,
                     stagger: index => index * .02
                 }, "-=2").to(advisersSubTitleSpan, {
-                    y: "-100%",
-                    opacity: 0,
                     stagger: index => index * .02
-                });
+                }, "+=1");
                 gsap.to(advisersListItems, {
                     opacity: 1,
                     y: 0,
@@ -4946,72 +5139,62 @@
                     }
                 });
             }
-            if (portfolioSection) gsap.timeline({
-                scrollTrigger: {
-                    trigger: portfolioSection,
-                    start: "top bottom",
-                    end: "250% bottom",
-                    scrub: true,
-                    onUpdate: self => {
-                        isAnimating = self.isActive;
-                        if (portfolioSlider) ;
-                    },
-                    onLeave: () => {
-                        isAnimating = false;
-                        if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                    },
-                    onEnterBack: () => {
-                        isAnimating = false;
-                        if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                    },
-                    onScrubComplete: () => {
-                        isAnimating = false;
-                        if (portfolioSlider) portfolioSlider.allowTouchMove = true;
+            if (deckSection) {
+                gsap.to(deckBtm, {
+                    left: 0,
+                    opacity: 1,
+                    scrollTrigger: {
+                        trigger: deckBtm,
+                        start: "top bottom",
+                        end: "top top",
+                        scrub: true
                     }
-                }
-            }).to(portfolioContainer, {
-                keyframes: [ {
-                    left: "0%",
+                });
+                gsap.to(deckListItemSmm, {
+                    top: 0,
                     ease: "none",
-                    duration: 2.3
-                }, {
-                    left: "-20%",
-                    y: "45%",
+                    scrollTrigger: {
+                        trigger: deckBtm,
+                        start: "top bottom",
+                        end: "top top",
+                        scrub: true
+                    }
+                });
+                gsap.to(deckContainer, {
+                    left: "-50%",
                     ease: "none",
-                    duration: .9
-                }, {
-                    left: "-100%",
-                    y: "200%",
-                    opacity: 0,
+                    scrollTrigger: {
+                        trigger: merchSection,
+                        start: "top bottom",
+                        end: "top top",
+                        scrub: true
+                    }
+                });
+            }
+            if (merchSection) {
+                gsap.to(merchSection, {
+                    left: 0,
+                    duration: .5,
                     ease: "none",
-                    duration: 2
-                } ]
-            });
-            if (deckSection) gsap.timeline({
-                scrollTrigger: {
-                    trigger: deckSection,
-                    start: "0% bottom",
-                    end: "40% bottom",
-                    scrub: true
-                }
-            }).to(deckTop, {
-                keyframes: [ {
-                    y: "0%",
-                    x: "0%",
+                    scrollTrigger: {
+                        trigger: merchSection,
+                        start: "top bottom",
+                        end: "top top",
+                        scrub: true
+                    }
+                });
+                gsap.to(merchContainer, {
+                    left: "-50%",
+                    duration: .5,
                     ease: "none",
-                    duration: .95
-                }, {
-                    y: "60%",
-                    x: "-25%",
-                    ease: "none",
-                    duration: .6
-                }, {
-                    y: "20%",
-                    x: "-100%",
-                    ease: "none",
-                    duration: 1
-                } ]
-            });
+                    scrollTrigger: {
+                        trigger: merchSection,
+                        start: "top top",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                });
+            }
             gsap.set([ navTitle, navFirstItem, partnersContainer ], {
                 clearProps: "all"
             });
@@ -5062,22 +5245,19 @@
                     const partnersContainer = document.querySelector(".partners__container");
                     if (partnersSection) {
                         gsap.set(partnersContainer, {
-                            left: "80%"
+                            left: "50%"
                         });
                         gsap.timeline({
                             scrollTrigger: {
                                 trigger: partnersSection,
                                 start: "top bottom",
                                 end: "160% bottom",
-                                scrub: true
+                                scrub: true,
+                                invalidateOnRefresh: true
                             }
                         }).to(partnersContainer, {
-                            left: "0%",
-                            ease: "none"
-                        }).to(partnersContainer, {
                             left: "-50%",
-                            ease: "none",
-                            opacity: 0
+                            ease: "none"
                         });
                         gsap.timeline({
                             scrollTrigger: {
@@ -5106,6 +5286,174 @@
                             top: 0
                         }, "<");
                     }
+                    if (portfolioSection) gsap.timeline({
+                        scrollTrigger: {
+                            trigger: portfolioSection,
+                            start: "top bottom",
+                            end: "250% bottom",
+                            scrub: true,
+                            invalidateOnRefresh: true,
+                            onUpdate: self => {
+                                isAnimating = self.isActive;
+                                if (portfolioSlider) ;
+                            },
+                            onLeave: () => {
+                                isAnimating = false;
+                                if (portfolioSlider) portfolioSlider.allowTouchMove = true;
+                            },
+                            onEnterBack: () => {
+                                isAnimating = false;
+                                if (portfolioSlider) portfolioSlider.allowTouchMove = true;
+                            },
+                            onScrubComplete: () => {
+                                isAnimating = false;
+                                if (portfolioSlider) portfolioSlider.allowTouchMove = true;
+                            }
+                        }
+                    }).to(portfolioContainer, {
+                        keyframes: [ {
+                            left: "0%",
+                            ease: "none",
+                            duration: 2.3
+                        }, {
+                            left: "-20%",
+                            y: "45%",
+                            ease: "none",
+                            duration: .9
+                        }, {
+                            left: "-100%",
+                            y: "200%",
+                            opacity: 0,
+                            ease: "none",
+                            duration: 2
+                        } ]
+                    });
+                    if (deckSection) gsap.timeline({
+                        scrollTrigger: {
+                            trigger: deckSection,
+                            start: "0% bottom",
+                            end: "40% bottom",
+                            scrub: true,
+                            invalidateOnRefresh: true
+                        }
+                    }).to(deckTop, {
+                        keyframes: [ {
+                            y: "0%",
+                            x: "0%",
+                            ease: "none",
+                            duration: .95
+                        }, {
+                            y: "60%",
+                            x: "-25%",
+                            ease: "none",
+                            duration: .6
+                        }, {
+                            y: "20%",
+                            x: "-100%",
+                            ease: "none",
+                            duration: 1
+                        } ]
+                    });
+                    if (footer) {
+                        gsap.to(payment, {
+                            left: "0%",
+                            duration: .5,
+                            ease: "none",
+                            scrollTrigger: {
+                                trigger: payment,
+                                start: "top bottom",
+                                end: "top 10%",
+                                scrub: true
+                            }
+                        });
+                        gsap.to(paymentContainer, {
+                            y: "100%",
+                            duration: .5,
+                            ease: "none",
+                            scrollTrigger: {
+                                trigger: payment,
+                                start: "120% bottom",
+                                end: "+=2000",
+                                scrub: true
+                            }
+                        });
+                        gsap.to(paymentItems, {
+                            top: 0,
+                            stagger: .01,
+                            ease: "none",
+                            scrollTrigger: {
+                                trigger: payment,
+                                start: "top bottom",
+                                end: "10% top",
+                                scrub: true
+                            }
+                        });
+                        gsap.to(paymentLine, {
+                            y: 0,
+                            opacity: 1,
+                            ease: "none",
+                            scrollTrigger: {
+                                trigger: payment,
+                                start: "top bottom",
+                                end: "10% top",
+                                scrub: true
+                            }
+                        });
+                        gsap.to(footerBody, {
+                            x: () => -(footerBody.scrollWidth - footerBody.offsetWidth),
+                            ease: "none",
+                            scrollTrigger: {
+                                id: "footerTrigger",
+                                trigger: footer,
+                                start: "top 10%",
+                                end: () => `+=${footerBody.scrollWidth - footerBody.offsetWidth}`,
+                                scrub: true,
+                                pin: true
+                            }
+                        });
+                        gsap.to(contactsContainer, {
+                            transform: "translate(0%,0%)",
+                            duration: .5,
+                            ease: "none",
+                            scrollTrigger: {
+                                trigger: contacts,
+                                start: "center bottom",
+                                end: "270% bottom",
+                                scrub: true
+                            }
+                        });
+                        gsap.timeline({
+                            scrollTrigger: {
+                                trigger: contacts,
+                                start: "bottom bottom",
+                                end: "350% bottom",
+                                scrub: true
+                            }
+                        }).to(getContactsTxts, {
+                            transform: "translateY(0%)",
+                            duration: .5,
+                            ease: "none"
+                        }).to(getContactsCubs, {
+                            transform: "translateY(0%)",
+                            duration: .5,
+                            ease: "none"
+                        }, "<").to(getContactsImg, {
+                            transform: "translateY(0%)",
+                            duration: .5,
+                            ease: "none"
+                        }, "<");
+                        gsap.to(footerBody, {
+                            left: "-50%",
+                            duration: .5,
+                            ease: "none",
+                            scrollTrigger: {
+                                trigger: footerList,
+                                start: () => ScrollTrigger.getById("footerTrigger").end,
+                                end: "+=1000",
+                                scrub: true
+                            }
+                        });
+                    }
                 }
                 if (portrait) {
                     if (itemFirstTxts) gsap.to(itemFirstTxts, {
@@ -5121,7 +5469,7 @@
                     const partnersContainer = document.querySelector(".partners__container");
                     if (partnersSection) {
                         gsap.set(partnersContainer, {
-                            left: "100%"
+                            left: "50%"
                         });
                         gsap.timeline({
                             scrollTrigger: {
@@ -5129,13 +5477,10 @@
                                 start: "20% bottom",
                                 end: "160% bottom",
                                 scrub: true,
-                                anticipatePin: 1
+                                invalidateOnRefresh: true
                             }
                         }).to(partnersContainer, {
-                            left: "0%",
-                            ease: "none"
-                        }).to(partnersContainer, {
-                            left: "-50%",
+                            left: "-70%",
                             ease: "none"
                         });
                         gsap.timeline({
@@ -5144,7 +5489,8 @@
                                 start: "40% bottom",
                                 end: "120% bottom",
                                 scrub: true,
-                                anticipatePin: 1
+                                anticipatePin: 1,
+                                invalidateOnRefresh: true
                             }
                         }).to(partnersTitle, {
                             backgroundSize: "100% 100%"
@@ -5156,20 +5502,61 @@
                             scrollTrigger: {
                                 trigger: partnersSection,
                                 start: "top 30%",
-                                end: "120% bottom",
+                                end: "160% bottom",
                                 scrub: true,
-                                anticipatePin: 1
+                                invalidateOnRefresh: true
                             }
                         }).to(advisers, {
                             y: 0,
-                            left: 0
+                            x: 0
                         }).to(advisersBlock, {
                             top: 0
                         }, "<");
                     }
+                    if (portfolioSection) {
+                        gsap.set(portfolioContainer, {
+                            x: "50%"
+                        });
+                        gsap.timeline({
+                            scrollTrigger: {
+                                trigger: portfolioSection,
+                                start: "top bottom",
+                                end: "bottom center",
+                                scrub: true,
+                                invalidateOnRefresh: true,
+                                onUpdate: self => {
+                                    isAnimating = self.isActive;
+                                    if (portfolioSlider) ;
+                                },
+                                onLeave: () => {
+                                    isAnimating = false;
+                                    if (portfolioSlider) portfolioSlider.allowTouchMove = true;
+                                },
+                                onEnterBack: () => {
+                                    isAnimating = false;
+                                    if (portfolioSlider) portfolioSlider.allowTouchMove = true;
+                                },
+                                onScrubComplete: () => {
+                                    isAnimating = false;
+                                    if (portfolioSlider) portfolioSlider.allowTouchMove = true;
+                                }
+                            }
+                        }).to(portfolioContainer, {
+                            x: "0%",
+                            ease: "none"
+                        });
+                    }
+                    if (deckSection) gsap.to(deckTop, {
+                        left: "0%",
+                        scrollTrigger: {
+                            trigger: deckTop,
+                            start: "top bottom",
+                            end: "center center",
+                            scrub: true,
+                            invalidateOnRefresh: true
+                        }
+                    });
                 }
-                if (landscapeMax1366) ;
-                if (maxWidth488) ;
             }));
         }
         createAnimation();
@@ -5177,5 +5564,6 @@
     window["FLS"] = false;
     addLoadedClass();
     menuInit();
+    pageNavigation();
     digitsCounter();
 })();
