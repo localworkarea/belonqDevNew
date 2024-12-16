@@ -1,6 +1,26 @@
 (() => {
     "use strict";
     const modules_flsModules = {};
+    let isMobile = {
+        Android: function() {
+            return navigator.userAgent.match(/Android/i);
+        },
+        BlackBerry: function() {
+            return navigator.userAgent.match(/BlackBerry/i);
+        },
+        iOS: function() {
+            return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+        },
+        Opera: function() {
+            return navigator.userAgent.match(/Opera Mini/i);
+        },
+        Windows: function() {
+            return navigator.userAgent.match(/IEMobile/i);
+        },
+        any: function() {
+            return isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows();
+        }
+    };
     function addLoadedClass() {
         if (!document.documentElement.classList.contains("loading")) window.addEventListener("load", (function() {
             setTimeout((function() {
@@ -4641,11 +4661,12 @@
     window.addEventListener("DOMContentLoaded", (() => {
         const canvas = document.getElementById("canvasModel");
         if (canvas) {
+            const canvasHoverEl = document.querySelector(".men-deck__hover-el");
             const speed = 40;
             const ctx = canvas.getContext("2d");
             let marioTimer = null;
             const mario = {
-                img: null,
+                img: new Image,
                 x: 0,
                 y: 0,
                 width: 593,
@@ -4653,8 +4674,7 @@
                 currentframe: 0,
                 totalframes: 65
             };
-            mario.img = new Image;
-            mario.img.src = "img/model/left-min.png";
+            mario.img.src = "files/left-min.png";
             function animateMario() {
                 mario.currentframe++;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -4665,21 +4685,26 @@
                     document.getElementById("lastModel").style.display = "block";
                 }
             }
-            mario.img.onload = function() {
+            if (isMobile.any()) {
                 const observer = new IntersectionObserver((entries => {
                     entries.forEach((entry => {
-                        if (entry.isIntersecting && entry.intersectionRatio >= .3) {
+                        if (entry.isIntersecting) if (!marioTimer) {
                             animateMario();
                             marioTimer = setInterval(animateMario, speed);
                             document.getElementById("firstModel").style.display = "none";
-                            observer.unobserve(entry.target);
                         }
                     }));
                 }), {
-                    threshold: [ .3 ]
+                    threshold: [ .5 ]
                 });
                 observer.observe(canvas);
-            };
+            } else canvasHoverEl.addEventListener("mouseenter", (() => {
+                if (!marioTimer) {
+                    animateMario();
+                    marioTimer = setInterval(animateMario, speed);
+                    document.getElementById("firstModel").style.display = "none";
+                }
+            }));
         }
         let isAnimating = false;
         let portfolioSlider;
@@ -4746,7 +4771,9 @@
             navButtons[merchSlider.realIndex].classList.add("_active");
         }
         const modal = document.querySelector(".modal-video");
-        const modalContent = document.querySelector(".modal-video__el");
+        const modalEl = document.querySelector(".modal-video__el");
+        const modalContent = document.querySelector(".modal-video__content");
+        const modalWrapper = document.querySelector(".modal-video__wrapper");
         const modalCloseButton = document.querySelector("[data-modal-close]");
         const videoElements = document.querySelectorAll("[data-video]");
         if (videoElements.length > 0) {
@@ -4760,8 +4787,8 @@
                     videoElement.muted = false;
                     videoElement.playsInline = true;
                     videoElement.innerHTML = `<source src="${videoSrc}" type="video/mp4">`;
-                    modalContent.innerHTML = "";
-                    modalContent.appendChild(videoElement);
+                    modalEl.innerHTML = "";
+                    modalEl.appendChild(videoElement);
                     modal.classList.add("_active");
                     document.documentElement.classList.add("lock");
                     document.documentElement.classList.add("video-modal");
@@ -4771,14 +4798,62 @@
                 modal.classList.remove("_active");
                 document.documentElement.classList.remove("lock");
                 document.documentElement.classList.remove("video-modal");
-                const video = modalContent.querySelector("video");
+                const video = modalEl.querySelector("video");
+                if (video) video.pause();
                 setTimeout((() => {
-                    if (video) {
-                        video.pause();
-                        video.currentTime = 0;
-                    }
-                    modalContent.innerHTML = "";
-                }), 500);
+                    if (video) video.currentTime = 0;
+                    modalEl.innerHTML = "";
+                }), 800);
+            }));
+            let activeButton = null;
+            videoElements.forEach((button => {
+                button.addEventListener("click", (() => {
+                    const rect = button.getBoundingClientRect();
+                    const initialWidth = rect.width;
+                    const initialHeight = rect.height;
+                    const initialTop = rect.top - 10;
+                    const initialLeft = rect.left - 10;
+                    button.dataset.initialWidth = initialWidth;
+                    button.dataset.initialHeight = initialHeight;
+                    button.dataset.initialTop = initialTop;
+                    button.dataset.initialLeft = initialLeft;
+                    activeButton = button;
+                    modalContent.style.width = `${initialWidth}px`;
+                    modalContent.style.height = `${initialHeight}px`;
+                    modalContent.style.top = `${initialTop}px`;
+                    modalContent.style.left = `${initialLeft}px`;
+                    setTimeout((() => {
+                        const wrapperRect = modalWrapper.getBoundingClientRect();
+                        const finalWidth = wrapperRect.width;
+                        const finalHeight = finalWidth * (9 / 16);
+                        const viewportHeight = window.innerHeight;
+                        const calculatedTop = (viewportHeight - finalHeight) / 2;
+                        let finalTop;
+                        if (finalHeight < viewportHeight) finalTop = calculatedTop; else finalTop = wrapperRect.top - 10;
+                        const finalLeft = wrapperRect.left - 10;
+                        modalContent.style.width = `100%`;
+                        modalContent.style.height = "auto";
+                        modalContent.style.top = `${finalTop}px`;
+                        modalContent.style.left = `${finalLeft}px`;
+                    }), 200);
+                }));
+            }));
+            modalCloseButton.addEventListener("click", (() => {
+                if (!activeButton) return;
+                const rect = activeButton.getBoundingClientRect();
+                const initialWidth = rect.width;
+                const initialTop = rect.top - 10;
+                const initialLeft = rect.left - 10;
+                modalContent.style.width = `${initialWidth}px`;
+                modalContent.style.top = `${initialTop}px`;
+                modalContent.style.left = `${initialLeft}px`;
+                activeButton = null;
+                setTimeout((() => {
+                    modalContent.style.removeProperty("width");
+                    modalContent.style.removeProperty("height");
+                    modalContent.style.removeProperty("top");
+                    modalContent.style.removeProperty("left");
+                }), 900);
             }));
         }
         const videoHead = document.querySelector(".head-deck__3d");
@@ -4878,7 +4953,7 @@
             if (currentWidth !== lastWidth) {
                 setTimeout((() => {
                     location.reload();
-                }), 300);
+                }), 0);
                 updateHeroHeight();
                 initSplitType();
                 createAnimation();
@@ -4938,10 +5013,10 @@
         const getContactsTxts = document.querySelector(".get-contacts__txts");
         const footerList = document.querySelector(".footer-list");
         function createAnimation() {
-            ScrollTrigger.getAll().forEach((trigger => trigger.kill()));
             ScrollTrigger.defaults({
                 smoothTouch: true
             });
+            ScrollTrigger.getAll().forEach((trigger => trigger.kill()));
             if (heroTitle) {
                 const heroTitleAline = document.querySelectorAll(".title-hero .split-chars");
                 const heroTitleA = document.querySelectorAll(".title-hero__a .char");
@@ -5171,30 +5246,17 @@
                     }
                 });
             }
-            if (merchSection) {
-                gsap.to(merchSection, {
-                    left: 0,
-                    duration: .5,
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: merchSection,
-                        start: "top bottom",
-                        end: "top top",
-                        scrub: true
-                    }
-                });
-                gsap.to(merchContainer, {
-                    left: "-50%",
-                    duration: .5,
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: merchSection,
-                        start: "top top",
-                        end: "bottom top",
-                        scrub: true
-                    }
-                });
-            }
+            if (merchSection) gsap.to(merchSection, {
+                left: 0,
+                duration: .5,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: merchSection,
+                    start: "top bottom",
+                    end: "top top",
+                    scrub: true
+                }
+            });
             gsap.set([ navTitle, navFirstItem, partnersContainer ], {
                 clearProps: "all"
             });
@@ -5207,6 +5269,96 @@
             }, (context => {
                 let {portrait, landscape, landscapeMax1366, maxWidth488} = context.conditions;
                 if (landscape) {
+                    const scrollBtn = document.querySelector(".scroll-btn");
+                    gsap.to(scrollBtn, {
+                        keyframes: [ {
+                            left: "45%",
+                            y: 0,
+                            rotation: 0,
+                            duration: 2.1
+                        }, {
+                            left: "0%",
+                            top: "50%",
+                            duration: 1.2
+                        }, {
+                            left: "35%",
+                            top: "-40%",
+                            duration: .9
+                        }, {
+                            left: "85%",
+                            top: "-40%",
+                            duration: 1
+                        }, {
+                            left: "85%",
+                            top: "50%",
+                            scale: 1.3,
+                            duration: 2
+                        }, {
+                            left: "60%",
+                            top: "60%",
+                            duration: 1
+                        }, {
+                            left: "20%",
+                            top: "65%",
+                            duration: 1
+                        }, {
+                            left: "30%",
+                            top: "30%",
+                            duration: 1
+                        }, {
+                            left: "45%",
+                            top: "-68%",
+                            duration: 1
+                        } ],
+                        scrollTrigger: {
+                            trigger: ".hero",
+                            start: "bottom top",
+                            endTrigger: ".footer",
+                            end: "450% bottom",
+                            scrub: true,
+                            invalidateOnRefresh: true,
+                            onUpdate: self => {
+                                let progress = self.progress;
+                                if (progress === 0) scrollBtn.classList.remove("active"); else if (progress > .01 && progress < .22) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-1");
+                                    scrollBtn.classList.remove("step-2", "step-3", "step-4", "step-5", "step-6", "step-7", "step-8", "step-9");
+                                } else if (progress >= .22 && progress < .3) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-2");
+                                    scrollBtn.classList.remove("step-1", "step-3", "step-4", "step-5", "step-6", "step-7", "step-8", "step-9");
+                                } else if (progress >= .3 && progress < .36) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-3");
+                                    scrollBtn.classList.remove("step-1", "step-2", "step-4", "step-5", "step-6", "step-7", "step-8", "step-9");
+                                } else if (progress >= .36 && progress < .42) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-4");
+                                    scrollBtn.classList.remove("step-1", "step-2", "step-3", "step-5", "step-6", "step-7", "step-8", "step-9");
+                                } else if (progress >= .42 && progress < .7) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-5");
+                                    scrollBtn.classList.remove("step-1", "step-2", "step-3", "step-4", "step-6", "step-7", "step-8", "step-9");
+                                } else if (progress >= .7 && progress < .86) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-6");
+                                    scrollBtn.classList.remove("step-1", "step-2", "step-3", "step-4", "step-5", "step-7", "step-8");
+                                } else if (progress >= .86 && progress < .94) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-7");
+                                    scrollBtn.classList.remove("step-1", "step-2", "step-3", "step-4", "step-5", "step-6", "step-8", "step-9");
+                                } else if (progress >= .94 && progress < .985) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-8");
+                                    scrollBtn.classList.remove("step-1", "step-2", "step-3", "step-4", "step-5", "step-6", "step-7", "step-9");
+                                } else if (progress >= .985 && progress < 1) {
+                                    scrollBtn.classList.add("active");
+                                    scrollBtn.classList.add("step-9");
+                                    scrollBtn.classList.remove("step-1", "step-2", "step-3", "step-4", "step-5", "step-6", "step-7", "step-8");
+                                }
+                            }
+                        }
+                    });
                     const itemFirstTxt = document.querySelectorAll(".item-first__txt .word .word-span");
                     if (itemFirstTxt) gsap.to(itemFirstTxt, {
                         y: "0%",
@@ -5314,15 +5466,15 @@
                         keyframes: [ {
                             left: "0%",
                             ease: "none",
-                            duration: 2.3
+                            duration: 2.1
                         }, {
-                            left: "-20%",
+                            left: "-25%",
                             y: "45%",
                             ease: "none",
                             duration: .9
                         }, {
                             left: "-100%",
-                            y: "200%",
+                            y: "300%",
                             opacity: 0,
                             ease: "none",
                             duration: 2
@@ -5353,6 +5505,17 @@
                             ease: "none",
                             duration: 1
                         } ]
+                    });
+                    if (merchSection) gsap.to(merchContainer, {
+                        left: "-50%",
+                        duration: .5,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: merchSection,
+                            start: "top top",
+                            end: "bottom top",
+                            scrub: true
+                        }
                     });
                     if (footer) {
                         gsap.to(payment, {
@@ -5560,6 +5723,31 @@
             }));
         }
         createAnimation();
+    }));
+    const scrollBtn = document.querySelector(".scroll-btn");
+    let lastScrollTop = 0;
+    const delta = 20;
+    window.addEventListener("scroll", (() => {
+        const scrollTop = window.scrollY;
+        if (Math.abs(scrollTop - lastScrollTop) > delta) {
+            if (scrollTop > lastScrollTop) {
+                scrollBtn.classList.add("_move-dwn");
+                scrollBtn.classList.remove("_move-up");
+            } else if (scrollTop < lastScrollTop) {
+                scrollBtn.classList.add("_move-up");
+                scrollBtn.classList.remove("_move-dwn");
+            }
+            lastScrollTop = scrollTop;
+        }
+    }));
+    scrollBtn.addEventListener("click", (() => {
+        lenis.stop();
+        window.scrollTo({
+            top: 0
+        });
+        setTimeout((() => {
+            lenis.start();
+        }), 500);
     }));
     window["FLS"] = false;
     addLoadedClass();
