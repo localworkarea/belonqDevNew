@@ -4706,10 +4706,8 @@
                 }
             }));
         }
-        let isAnimating = false;
-        let portfolioSlider;
         if (document.querySelector(".portfolio__slider")) {
-            portfolioSlider = new Swiper(".portfolio__slider", {
+            const portfolioSlider = new Swiper(".portfolio__slider", {
                 modules: [ EffectCube ],
                 observer: true,
                 observeParents: true,
@@ -4726,10 +4724,38 @@
                 loop: true
             });
             const navButtons = document.querySelectorAll(".portfolio__nav-btn");
+            let lenisHandled = false;
+            let lastScrollY = window.scrollY;
+            const resetLenisFlagOnScroll = () => {
+                const currentScrollY = window.scrollY;
+                if (Math.abs(currentScrollY - lastScrollY) > 1) {
+                    lenisHandled = false;
+                    lastScrollY = currentScrollY;
+                    window.removeEventListener("scroll", resetLenisFlagOnScroll);
+                }
+            };
+            const stopLenisWithFlag = () => {
+                if (!lenisHandled) {
+                    lenis.stop();
+                    setTimeout((() => {
+                        lenis.start();
+                        lenisHandled = true;
+                        lastScrollY = window.scrollY;
+                        window.addEventListener("scroll", resetLenisFlagOnScroll);
+                    }), 10);
+                }
+            };
             navButtons.forEach(((btn, index) => {
                 btn.addEventListener("click", (() => {
                     portfolioSlider.slideToLoop(index);
+                    stopLenisWithFlag();
                 }));
+            }));
+            portfolioSlider.on("touchStart", (() => {
+                stopLenisWithFlag();
+            }));
+            portfolioSlider.on("touchEnd", (() => {
+                stopLenisWithFlag();
             }));
             portfolioSlider.on("slideChange", (() => {
                 const realIndex = portfolioSlider.realIndex;
@@ -4757,10 +4783,38 @@
                 loop: true
             });
             const navButtons = document.querySelectorAll(".nav-merch__nav-btn");
+            let lenisHandled = false;
+            let lastScrollY = window.scrollY;
+            const resetLenisFlagOnScroll = () => {
+                const currentScrollY = window.scrollY;
+                if (Math.abs(currentScrollY - lastScrollY) > 1) {
+                    lenisHandled = false;
+                    lastScrollY = currentScrollY;
+                    window.removeEventListener("scroll", resetLenisFlagOnScroll);
+                }
+            };
+            const stopLenisWithFlag = () => {
+                if (!lenisHandled) {
+                    lenis.stop();
+                    setTimeout((() => {
+                        lenis.start();
+                        lenisHandled = true;
+                        lastScrollY = window.scrollY;
+                        window.addEventListener("scroll", resetLenisFlagOnScroll);
+                    }), 10);
+                }
+            };
             navButtons.forEach(((btn, index) => {
                 btn.addEventListener("click", (() => {
                     merchSlider.slideToLoop(index);
+                    stopLenisWithFlag();
                 }));
+            }));
+            merchSlider.on("touchStart", (() => {
+                stopLenisWithFlag();
+            }));
+            merchSlider.on("touchEnd", (() => {
+                stopLenisWithFlag();
             }));
             merchSlider.on("slideChange", (() => {
                 const realIndex = merchSlider.realIndex;
@@ -5316,7 +5370,6 @@
                             endTrigger: ".footer",
                             end: "450% bottom",
                             scrub: true,
-                            invalidateOnRefresh: true,
                             onUpdate: self => {
                                 let progress = self.progress;
                                 if (progress === 0) scrollBtn.classList.remove("active"); else if (progress > .01 && progress < .22) {
@@ -5404,8 +5457,7 @@
                                 trigger: partnersSection,
                                 start: "top bottom",
                                 end: "160% bottom",
-                                scrub: true,
-                                invalidateOnRefresh: true
+                                scrub: true
                             }
                         }).to(partnersContainer, {
                             left: "-50%",
@@ -5443,24 +5495,7 @@
                             trigger: portfolioSection,
                             start: "top bottom",
                             end: "250% bottom",
-                            scrub: true,
-                            invalidateOnRefresh: true,
-                            onUpdate: self => {
-                                isAnimating = self.isActive;
-                                if (portfolioSlider) ;
-                            },
-                            onLeave: () => {
-                                isAnimating = false;
-                                if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                            },
-                            onEnterBack: () => {
-                                isAnimating = false;
-                                if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                            },
-                            onScrubComplete: () => {
-                                isAnimating = false;
-                                if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                            }
+                            scrub: true
                         }
                     }).to(portfolioContainer, {
                         keyframes: [ {
@@ -5485,8 +5520,7 @@
                             trigger: deckSection,
                             start: "0% bottom",
                             end: "40% bottom",
-                            scrub: true,
-                            invalidateOnRefresh: true
+                            scrub: true
                         }
                     }).to(deckTop, {
                         keyframes: [ {
@@ -5639,8 +5673,7 @@
                                 trigger: partnersSection,
                                 start: "20% bottom",
                                 end: "160% bottom",
-                                scrub: true,
-                                invalidateOnRefresh: true
+                                scrub: true
                             }
                         }).to(partnersContainer, {
                             left: "-70%",
@@ -5652,8 +5685,7 @@
                                 start: "40% bottom",
                                 end: "120% bottom",
                                 scrub: true,
-                                anticipatePin: 1,
-                                invalidateOnRefresh: true
+                                anticipatePin: 1
                             }
                         }).to(partnersTitle, {
                             backgroundSize: "100% 100%"
@@ -5666,8 +5698,7 @@
                                 trigger: partnersSection,
                                 start: "top 30%",
                                 end: "160% bottom",
-                                scrub: true,
-                                invalidateOnRefresh: true
+                                scrub: true
                             }
                         }).to(advisers, {
                             y: 0,
@@ -5685,24 +5716,7 @@
                                 trigger: portfolioSection,
                                 start: "top bottom",
                                 end: "bottom center",
-                                scrub: true,
-                                invalidateOnRefresh: true,
-                                onUpdate: self => {
-                                    isAnimating = self.isActive;
-                                    if (portfolioSlider) ;
-                                },
-                                onLeave: () => {
-                                    isAnimating = false;
-                                    if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                                },
-                                onEnterBack: () => {
-                                    isAnimating = false;
-                                    if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                                },
-                                onScrubComplete: () => {
-                                    isAnimating = false;
-                                    if (portfolioSlider) portfolioSlider.allowTouchMove = true;
-                                }
+                                scrub: true
                             }
                         }).to(portfolioContainer, {
                             x: "0%",
@@ -5715,8 +5729,7 @@
                             trigger: deckTop,
                             start: "top bottom",
                             end: "center center",
-                            scrub: true,
-                            invalidateOnRefresh: true
+                            scrub: true
                         }
                     });
                 }

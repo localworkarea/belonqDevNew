@@ -1814,6 +1814,22 @@ body {
     margin-inline: auto
   }
 }
+@media (orientation:portrait)and (min-width:30.06125em) {
+  .merch__title::before {
+    left: 17vw;
+    width: 5vw
+  }
+  .nav-merch {
+    padding: 6vw 6vw 6vw 12vw;
+    margin-inline: 18vw
+  }
+  .nav-merch__body {
+    grid-auto-rows: 6vw
+  }
+  .nav-merch__nav-btn {
+    font-size: 3.3vw
+  }
+}
 @media (min-width:48.06125em) {
   .nav-first__link {
     border: .1875rem solid #595757
@@ -2034,6 +2050,23 @@ body {
   }
   .nav-first__txt {
     margin-bottom: .625rem
+  }
+  .merch {
+    margin-bottom: 6.25rem!important
+  }
+  .merch__title::before {
+    width: 5vw;
+    left: 10vw
+  }
+  .nav-merch {
+    padding: 6vw 8vw 6vw 12vw;
+    margin-inline: 11vw
+  }
+  .nav-merch__body {
+    grid-auto-rows: 8vw
+  }
+  .nav-merch__nav-btn {
+    font-size: 4vw
   }
 }
 @media (orientation:portrait)and (max-width:30.06125em) {
@@ -2750,10 +2783,6 @@ body {
     top: -3.125rem;
     right: 0
   }
-  .merch__title::before {
-    left: 7vw;
-    width: 5vw
-  }
   .merch__title {
     padding-left: 5vw;
     font-size: 15vw!important;
@@ -2770,17 +2799,7 @@ body {
     aspect-ratio: 1316/740;
     width: 100%!important
   }
-  .nav-merch {
-    padding: 6vw 6vw 6vw 12vw;
-    margin-inline: 18vw
-  }
   .nav-merch__subtitle {
-    font-size: 3.3vw
-  }
-  .nav-merch__body {
-    grid-auto-rows: 6vw
-  }
-  .nav-merch__nav-btn {
     font-size: 3.3vw
   }
   .payment._watcher-view .payment__item {
