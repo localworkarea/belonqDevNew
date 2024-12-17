@@ -1742,6 +1742,9 @@
         };
         animate();
     }
+    function utils_getSlideTransformEl(slideEl) {
+        return slideEl.querySelector(".swiper-slide-transform") || slideEl.shadowRoot && slideEl.shadowRoot.querySelector(".swiper-slide-transform") || slideEl;
+    }
     function utils_elementChildren(element, selector) {
         if (selector === void 0) selector = "";
         const children = [ ...element.children ];
@@ -4468,6 +4471,14 @@
         }));
     }));
     Swiper.use([ Resize, Observer ]);
+    function effect_target_effectTarget(effectParams, slideEl) {
+        const transformEl = utils_getSlideTransformEl(slideEl);
+        if (transformEl !== slideEl) {
+            transformEl.style.backfaceVisibility = "hidden";
+            transformEl.style["-webkit-backface-visibility"] = "hidden";
+        }
+        return transformEl;
+    }
     function effect_init_effectInit(params) {
         const {effect, swiper, on, setTranslate, setTransition, overwriteParams, perspective, recreateShadows, getEffectParams} = params;
         on("beforeInit", (() => {
@@ -4648,6 +4659,92 @@
             })
         });
     }
+    function create_shadow_createShadow(suffix, slideEl, side) {
+        const shadowClass = `swiper-slide-shadow${side ? `-${side}` : ""}${suffix ? ` swiper-slide-shadow-${suffix}` : ""}`;
+        const shadowContainer = utils_getSlideTransformEl(slideEl);
+        let shadowEl = shadowContainer.querySelector(`.${shadowClass.split(" ").join(".")}`);
+        if (!shadowEl) {
+            shadowEl = utils_createElement("div", shadowClass.split(" "));
+            shadowContainer.append(shadowEl);
+        }
+        return shadowEl;
+    }
+    function EffectCoverflow(_ref) {
+        let {swiper, extendParams, on} = _ref;
+        extendParams({
+            coverflowEffect: {
+                rotate: 50,
+                stretch: 0,
+                depth: 100,
+                scale: 1,
+                modifier: 1,
+                slideShadows: true
+            }
+        });
+        const setTranslate = () => {
+            const {width: swiperWidth, height: swiperHeight, slides, slidesSizesGrid} = swiper;
+            const params = swiper.params.coverflowEffect;
+            const isHorizontal = swiper.isHorizontal();
+            const transform = swiper.translate;
+            const center = isHorizontal ? -transform + swiperWidth / 2 : -transform + swiperHeight / 2;
+            const rotate = isHorizontal ? params.rotate : -params.rotate;
+            const translate = params.depth;
+            const r = utils_getRotateFix(swiper);
+            for (let i = 0, length = slides.length; i < length; i += 1) {
+                const slideEl = slides[i];
+                const slideSize = slidesSizesGrid[i];
+                const slideOffset = slideEl.swiperSlideOffset;
+                const centerOffset = (center - slideOffset - slideSize / 2) / slideSize;
+                const offsetMultiplier = typeof params.modifier === "function" ? params.modifier(centerOffset) : centerOffset * params.modifier;
+                let rotateY = isHorizontal ? rotate * offsetMultiplier : 0;
+                let rotateX = isHorizontal ? 0 : rotate * offsetMultiplier;
+                let translateZ = -translate * Math.abs(offsetMultiplier);
+                let stretch = params.stretch;
+                if (typeof stretch === "string" && stretch.indexOf("%") !== -1) stretch = parseFloat(params.stretch) / 100 * slideSize;
+                let translateY = isHorizontal ? 0 : stretch * offsetMultiplier;
+                let translateX = isHorizontal ? stretch * offsetMultiplier : 0;
+                let scale = 1 - (1 - params.scale) * Math.abs(offsetMultiplier);
+                if (Math.abs(translateX) < .001) translateX = 0;
+                if (Math.abs(translateY) < .001) translateY = 0;
+                if (Math.abs(translateZ) < .001) translateZ = 0;
+                if (Math.abs(rotateY) < .001) rotateY = 0;
+                if (Math.abs(rotateX) < .001) rotateX = 0;
+                if (Math.abs(scale) < .001) scale = 0;
+                const slideTransform = `translate3d(${translateX}px,${translateY}px,${translateZ}px)  rotateX(${r(rotateX)}deg) rotateY(${r(rotateY)}deg) scale(${scale})`;
+                const targetEl = effect_target_effectTarget(params, slideEl);
+                targetEl.style.transform = slideTransform;
+                slideEl.style.zIndex = -Math.abs(Math.round(offsetMultiplier)) + 1;
+                if (params.slideShadows) {
+                    let shadowBeforeEl = isHorizontal ? slideEl.querySelector(".swiper-slide-shadow-left") : slideEl.querySelector(".swiper-slide-shadow-top");
+                    let shadowAfterEl = isHorizontal ? slideEl.querySelector(".swiper-slide-shadow-right") : slideEl.querySelector(".swiper-slide-shadow-bottom");
+                    if (!shadowBeforeEl) shadowBeforeEl = create_shadow_createShadow("coverflow", slideEl, isHorizontal ? "left" : "top");
+                    if (!shadowAfterEl) shadowAfterEl = create_shadow_createShadow("coverflow", slideEl, isHorizontal ? "right" : "bottom");
+                    if (shadowBeforeEl) shadowBeforeEl.style.opacity = offsetMultiplier > 0 ? offsetMultiplier : 0;
+                    if (shadowAfterEl) shadowAfterEl.style.opacity = -offsetMultiplier > 0 ? -offsetMultiplier : 0;
+                }
+            }
+        };
+        const setTransition = duration => {
+            const transformElements = swiper.slides.map((slideEl => utils_getSlideTransformEl(slideEl)));
+            transformElements.forEach((el => {
+                el.style.transitionDuration = `${duration}ms`;
+                el.querySelectorAll(".swiper-slide-shadow-top, .swiper-slide-shadow-right, .swiper-slide-shadow-bottom, .swiper-slide-shadow-left").forEach((shadowEl => {
+                    shadowEl.style.transitionDuration = `${duration}ms`;
+                }));
+            }));
+        };
+        effect_init_effectInit({
+            effect: "coverflow",
+            swiper,
+            on,
+            setTranslate,
+            setTransition,
+            perspective: () => true,
+            overwriteParams: () => ({
+                watchSlidesProgress: true
+            })
+        });
+    }
     const lenis = new Lenis({
         smooth: true,
         lerp: .05,
@@ -4659,6 +4756,50 @@
     }));
     gsap.ticker.lagSmoothing(0);
     window.addEventListener("DOMContentLoaded", (() => {
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.registerPlugin(ScrollToPlugin);
+        const eyeballs = document.querySelectorAll(".eyeball");
+        if (eyeballs.length > 0) {
+            const squares = document.querySelectorAll(".square");
+            const eyeConfig = {
+                irisRadius: 36,
+                pupilRadius: 16
+            };
+            const getEyeCenter = eyeball => {
+                const rect = eyeball.getBoundingClientRect();
+                return {
+                    centerX: rect.left + rect.width / 2,
+                    centerY: rect.top + rect.height / 2,
+                    radius: eyeConfig.irisRadius - eyeConfig.pupilRadius
+                };
+            };
+            const constrain = (x, y, radius) => {
+                const distance = Math.sqrt(x * x + y * y);
+                if (distance > radius) {
+                    const angle = Math.atan2(y, x);
+                    return {
+                        x: Math.cos(angle) * radius,
+                        y: Math.sin(angle) * radius
+                    };
+                }
+                return {
+                    x,
+                    y
+                };
+            };
+            document.addEventListener("mousemove", (event => {
+                const mouseX = event.clientX;
+                const mouseY = event.clientY;
+                eyeballs.forEach(((eyeball, index) => {
+                    const square = squares[index];
+                    const {centerX, centerY, radius} = getEyeCenter(eyeball);
+                    const dx = mouseX - centerX;
+                    const dy = mouseY - centerY;
+                    const {x, y} = constrain(dx, dy, radius);
+                    square.style.transform = `translate(${x}px, ${y}px)`;
+                }));
+            }));
+        }
         const canvas = document.getElementById("canvasModel");
         if (canvas) {
             const canvasHoverEl = document.querySelector(".men-deck__hover-el");
@@ -4824,6 +4965,32 @@
             }));
             navButtons[merchSlider.realIndex].classList.add("_active");
         }
+        if (document.querySelector(".sliders-partners__slider")) {
+            new Swiper(".sliders-partners__slider", {
+                modules: [ EffectCoverflow ],
+                observer: true,
+                observeParents: true,
+                slidesPerView: 5,
+                spaceBetween: 0,
+                autoHeight: true,
+                speed: 800,
+                grabCursor: true,
+                centeredSlides: true,
+                autoHeight: true,
+                direction: "vertical",
+                effect: "coverflow",
+                coverflowEffect: {
+                    depth: 150,
+                    modifier: 2,
+                    rotate: 0,
+                    scale: .9,
+                    slideShadows: false,
+                    stretch: 0
+                },
+                loop: true,
+                on: {}
+            });
+        }
         const modal = document.querySelector(".modal-video");
         const modalEl = document.querySelector(".modal-video__el");
         const modalContent = document.querySelector(".modal-video__content");
@@ -4951,8 +5118,6 @@
             }
         }
         updateHeroHeight();
-        gsap.registerPlugin(ScrollTrigger);
-        gsap.registerPlugin(ScrollToPlugin);
         const splitTextLines = document.querySelectorAll(".split-lines");
         const splitTextWords = document.querySelectorAll(".split-words");
         const splitTextChars = document.querySelectorAll(".split-chars");
@@ -5067,9 +5232,6 @@
         const getContactsTxts = document.querySelector(".get-contacts__txts");
         const footerList = document.querySelector(".footer-list");
         function createAnimation() {
-            ScrollTrigger.defaults({
-                smoothTouch: true
-            });
             ScrollTrigger.getAll().forEach((trigger => trigger.kill()));
             if (heroTitle) {
                 const heroTitleAline = document.querySelectorAll(".title-hero .split-chars");
