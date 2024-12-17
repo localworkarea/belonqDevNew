@@ -1175,7 +1175,6 @@ body {
 .advisers {
   display: grid;
   position: relative;
-  left: 20%;
   -webkit-transform: translateY(30%);
   transform: translateY(30%)
 }
@@ -2601,6 +2600,7 @@ body {
     grid-template-columns: auto 1fr
   }
   .advisers {
+    left: 20%;
     grid-template-columns: 1fr 58%
   }
   .advisers__eye-svg {

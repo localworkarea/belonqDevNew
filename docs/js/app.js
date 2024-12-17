@@ -4988,8 +4988,36 @@
                     stretch: 0
                 },
                 loop: true,
-                on: {}
+                on: {
+                    touchStart: () => {
+                        stopLenisWithFlag();
+                    },
+                    touchEnd: () => {
+                        stopLenisWithFlag();
+                    }
+                }
             });
+            let lenisHandled = false;
+            let lastScrollY = window.scrollY;
+            const resetLenisFlagOnScroll = () => {
+                const currentScrollY = window.scrollY;
+                if (Math.abs(currentScrollY - lastScrollY) > 1) {
+                    lenisHandled = false;
+                    lastScrollY = currentScrollY;
+                    window.removeEventListener("scroll", resetLenisFlagOnScroll);
+                }
+            };
+            const stopLenisWithFlag = () => {
+                if (!lenisHandled) {
+                    lenis.stop();
+                    setTimeout((() => {
+                        lenis.start();
+                        lenisHandled = true;
+                        lastScrollY = window.scrollY;
+                        window.addEventListener("scroll", resetLenisFlagOnScroll);
+                    }), 10);
+                }
+            };
         }
         const modal = document.querySelector(".modal-video");
         const modalEl = document.querySelector(".modal-video__el");
@@ -5834,11 +5862,11 @@
                             scrollTrigger: {
                                 trigger: partnersSection,
                                 start: "20% bottom",
-                                end: "160% bottom",
+                                end: "top top",
                                 scrub: true
                             }
                         }).to(partnersContainer, {
-                            left: "-70%",
+                            left: "0%",
                             ease: "none"
                         });
                         gsap.timeline({
@@ -5859,7 +5887,7 @@
                             scrollTrigger: {
                                 trigger: partnersSection,
                                 start: "top 30%",
-                                end: "160% bottom",
+                                end: "center center",
                                 scrub: true
                             }
                         }).to(advisers, {
