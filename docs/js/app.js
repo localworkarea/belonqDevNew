@@ -5862,7 +5862,7 @@
                             scrollTrigger: {
                                 trigger: partnersSection,
                                 start: "20% bottom",
-                                end: "top top",
+                                end: "top 20%",
                                 scrub: true
                             }
                         }).to(partnersContainer, {

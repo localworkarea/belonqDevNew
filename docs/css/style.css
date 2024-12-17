@@ -443,7 +443,6 @@ body {
   transition: opacity .65s ease
 }
 .swipe._watcher-view {
-  opacity: 0;
   transition-delay: 6s
 }
 .swipe__body {
@@ -1090,8 +1089,20 @@ body {
   position: relative
 }
 .partners__head {
+  position: relative;
   display: grid;
   gap: 1.25rem
+}
+.partners__head .swipe {
+  position: absolute!important
+}
+.partners__head .swipe .swipe__body {
+  -webkit-transform: rotate(90deg);
+  transform: rotate(90deg);
+  order: 2
+}
+.partners__head .swipe .swipe__txt {
+  order: 1
 }
 .partners__title {
   color: #fdda04;
@@ -2599,6 +2610,10 @@ body {
   .partners__head {
     grid-template-columns: auto 1fr
   }
+  .partners__head .swipe {
+    bottom: 2vw;
+    left: 32vw
+  }
   .advisers {
     left: 20%;
     grid-template-columns: 1fr 58%
@@ -3032,6 +3047,10 @@ body {
   }
   .item-services__txt {
     font-size: 1.8vw
+  }
+  .partners__head .swipe {
+    right: 10vw;
+    top: 10vw
   }
   .advisers {
     grid-template-columns: 30% 1fr
