@@ -5456,12 +5456,12 @@
         window.addEventListener("resize", (() => {
             const currentWidth = window.innerWidth;
             if (currentWidth !== lastWidth) {
-                setTimeout((() => {
-                    location.reload();
-                }), 0);
+                setTimeout((() => {}), 0);
                 updateHeroHeight();
                 initSplitType();
-                createAnimation();
+                setTimeout((() => {
+                    createAnimation();
+                }), 300);
                 ScrollTrigger.refresh();
                 lastWidth = currentWidth;
             }
@@ -5528,14 +5528,14 @@
                 const tl = gsap.timeline({
                     scrollTrigger: {
                         trigger: heroSection,
-                        start: "top top",
+                        start: "0 0",
                         end: "+=2000",
                         scrub: 1
                     }
                 });
                 tl.to(heroTitleAline, {
-                    y: "-100%",
-                    x: "-100%",
+                    yPercent: -100,
+                    xPercent: -100,
                     stagger: .02,
                     ease: "power2.out"
                 }), tl.to(heroTitleA, {
@@ -5563,11 +5563,11 @@
             if (heroRight) {
                 gsap.to(heroRight, {
                     opacity: 0,
-                    x: "20%",
-                    y: "-20%",
+                    xPercent: 20,
+                    yPercent: -20,
                     scrollTrigger: {
                         trigger: heroSection,
-                        start: "top top",
+                        start: "0 0",
                         end: "+=1000",
                         scrub: 1.2
                     }
@@ -5575,7 +5575,7 @@
                 const tl4 = gsap.timeline({
                     scrollTrigger: {
                         trigger: heroSection,
-                        start: "top top",
+                        start: "0 0",
                         end: "bottom top",
                         scrub: 1
                     }
@@ -5718,7 +5718,7 @@
             }
             if (deckSection) {
                 gsap.to(deckBtm, {
-                    left: 0,
+                    x: 0,
                     opacity: 1,
                     scrollTrigger: {
                         trigger: deckBtm,
@@ -5738,7 +5738,7 @@
                     }
                 });
                 gsap.to(deckContainer, {
-                    left: "-50%",
+                    xPercent: -50,
                     ease: "none",
                     scrollTrigger: {
                         trigger: merchSection,
@@ -5759,7 +5759,7 @@
                     scrub: true
                 }
             });
-            gsap.set([ navTitle, navFirstItem, partnersContainer ], {
+            gsap.set([ navTitle, navFirstItem, partnersContainer, portfolioContainer, deckTop, footer, footerBody, payment, paymentContainer, paymentItems, paymentLine, contactsContainer, getContactsTxts, getContactsCubs, getContactsImg ], {
                 clearProps: "all"
             });
             let mm = gsap.matchMedia();
@@ -5771,8 +5771,18 @@
             }, (context => {
                 let {portrait, landscape, landscapeMax1366, maxWidth488} = context.conditions;
                 if (landscape) {
+                    const arrowDwn = document.querySelector(".arrow-dwn");
+                    if (arrowDwn) gsap.to(arrowDwn, {
+                        opacity: 0,
+                        scrollTrigger: {
+                            trigger: heroSection,
+                            start: "0 0",
+                            end: "bottom center",
+                            scrub: 1
+                        }
+                    });
                     const scrollBtn = document.querySelector(".scroll-btn");
-                    gsap.to(scrollBtn, {
+                    if (scrollBtn) gsap.to(scrollBtn, {
                         keyframes: [ {
                             left: "45%",
                             y: 0,
@@ -5938,6 +5948,7 @@
                             top: 0
                         }, "<");
                     }
+                    const portfolioContainer = document.querySelector(".portfolio__container");
                     if (portfolioSection) gsap.timeline({
                         scrollTrigger: {
                             trigger: portfolioSection,
@@ -5963,6 +5974,7 @@
                             duration: 2
                         } ]
                     });
+                    const deckTop = document.querySelector(".deck__top");
                     if (deckSection) gsap.timeline({
                         scrollTrigger: {
                             trigger: deckSection,
@@ -5999,9 +6011,19 @@
                             scrub: true
                         }
                     });
+                    const footer = document.querySelector(".footer");
+                    const footerBody = document.querySelector(".footer__body");
+                    const payment = document.querySelector(".payment");
+                    const paymentContainer = document.querySelector(".payment__container");
+                    const paymentItems = document.querySelectorAll(".payment__item");
+                    const paymentLine = document.querySelectorAll(".payment__line");
+                    const contactsContainer = document.querySelector(".contacts__container");
+                    const getContactsImg = document.querySelector(".get-contacts__img");
+                    const getContactsCubs = document.querySelector(".get-contacts__cubes");
+                    const getContactsTxts = document.querySelector(".get-contacts__txts");
                     if (footer) {
                         gsap.to(payment, {
-                            left: "0%",
+                            x: 50,
                             duration: .5,
                             ease: "none",
                             scrollTrigger: {
@@ -6075,20 +6097,20 @@
                                 scrub: true
                             }
                         }).to(getContactsTxts, {
-                            transform: "translateY(0%)",
+                            y: 0,
                             duration: .5,
                             ease: "none"
                         }).to(getContactsCubs, {
-                            transform: "translateY(0%)",
+                            y: 0,
                             duration: .5,
                             ease: "none"
                         }, "<").to(getContactsImg, {
-                            transform: "translateY(0%)",
+                            y: 0,
                             duration: .5,
                             ease: "none"
                         }, "<");
                         gsap.to(footerBody, {
-                            left: "-50%",
+                            xPercent: -50,
                             duration: .5,
                             ease: "none",
                             scrollTrigger: {
@@ -6155,6 +6177,7 @@
                             top: 0
                         }, "<");
                     }
+                    const portfolioContainer = document.querySelector(".portfolio__container");
                     if (portfolioSection) {
                         gsap.set(portfolioContainer, {
                             x: "50%"
@@ -6171,8 +6194,9 @@
                             ease: "none"
                         });
                     }
+                    const deckTop = document.querySelector(".deck__top");
                     if (deckSection) gsap.to(deckTop, {
-                        left: "0%",
+                        x: 0,
                         scrollTrigger: {
                             trigger: deckTop,
                             start: "top bottom",

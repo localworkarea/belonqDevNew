@@ -776,6 +776,9 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr
 }
+.hero__t-wr {
+  position: relative
+}
 .hero__right {
   position: relative
 }
@@ -919,6 +922,38 @@ body {
   font-weight: 400;
   font-size: .85vw
 }
+.arrow-dwn {
+  position: absolute;
+  bottom: 4vw;
+  left: 10vw;
+  width: 3vw
+}
+.arrow-dwn__arr {
+  width: 100%;
+  height: auto;
+  -webkit-animation: arrowDwn 1s ease-in-out 0s infinite alternate;
+  animation: arrowDwn 1s ease-in-out 0s infinite alternate
+}
+@-webkit-keyframes arrowDwn {
+  0% {
+    -webkit-transform: translateY(0);
+    transform: translateY(0)
+  }
+  100% {
+    -webkit-transform: translateY(25%);
+    transform: translateY(25%)
+  }
+}
+@keyframes arrowDwn {
+  0% {
+    -webkit-transform: translateY(0);
+    transform: translateY(0)
+  }
+  100% {
+    -webkit-transform: translateY(25%);
+    transform: translateY(25%)
+  }
+}
 .services {
   margin-bottom: 10vw
 }
@@ -963,6 +998,10 @@ body {
 }
 .item-first__txt:not(:last-child) {
   margin-bottom: 5%
+}
+.loaded .item-first__arr {
+  -webkit-animation: arrowDwn 1s ease-in-out .6s infinite alternate;
+  animation: arrowDwn 1s ease-in-out .6s infinite alternate
 }
 .nav-first {
   position: relative;
@@ -1399,7 +1438,8 @@ body {
 }
 .deck__btm {
   position: relative;
-  left: 50%;
+  -webkit-transform: translateX(50%);
+  transform: translateX(50%);
   opacity: 0
 }
 .deck__block {
@@ -2817,7 +2857,8 @@ body {
     width: 100vw
   }
   .payment {
-    left: 50%
+    -webkit-transform: translateX(50%);
+    transform: translateX(50%)
   }
   .payment__body {
     max-width: 68%
@@ -2865,8 +2906,7 @@ body {
   }
   .contacts__container {
     -webkit-transform: translate(50%,-200%);
-    transform: translate(50%,-200%);
-    will-change: transform
+    transform: translate(50%,-200%)
   }
   .get-contacts {
     grid-template-columns: 60% 1fr;
@@ -3006,6 +3046,9 @@ body {
   .count-hero__txt {
     font-size: 2.2vw
   }
+  .arrow-dwn {
+    opacity: 0
+  }
   .services {
     opacity: 0
   }
@@ -3127,7 +3170,8 @@ body {
     left: 55vw
   }
   .deck__top {
-    left: 50%;
+    -webkit-transform: translateX(50%);
+    transform: translateX(50%);
     grid-template-columns: 1fr 60%
   }
   .deck__txts {
